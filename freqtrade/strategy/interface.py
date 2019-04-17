@@ -38,6 +38,7 @@ class SellType(Enum):
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
     FORCE_SELL = "force_sell"
+    MAX_HOLD = "max_hold"
     NONE = ""
 
 
@@ -280,6 +281,10 @@ class IStrategy(ABC):
             logger.debug('Required profit reached. Selling..')
             return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
 
+        if self.max_hold_reached(trade=trade,current_time=date):
+            logger.debug('Max hold time reached.  Selling..')
+            return SellCheckTuple(sell_flag=True, sell_type=SellType.MAX_HOLD)
+
         if experimental.get('sell_profit_only', False):
             logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
@@ -357,6 +362,20 @@ class IStrategy(ABC):
         roi_entry = max(list(filter(lambda x: trade_dur >= x, self.minimal_roi.keys())))
         threshold = self.minimal_roi[roi_entry]
         if current_profit > threshold:
+            return True
+
+        return False
+
+    def max_hold_reached(self, trade: Trade, current_time: datetime) -> bool:
+        """
+        Based on the amount of time passed since trade opened.  If the number of minutes
+        passed is greater than max_hold_time the bot will sell.
+        :return True if bot should sell at current rate.
+        """
+
+        # Check if time matches and current rate is above threshold
+        trade_dur = (current_time.timestamp() - trade.open_date.timestamp()) / 60
+        if trade_dur > 480:
             return True
 
         return False

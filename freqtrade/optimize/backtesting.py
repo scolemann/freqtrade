@@ -277,6 +277,8 @@ class Backtesting(object):
                     # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
                     closerate = - (trade.open_rate * roi + trade.open_rate *
                                    (1 + trade.fee_open)) / (trade.fee_close - 1)
+                elif sell.sell_type == (SellType.MAX_HOLD):
+                    closerate = sell_row.close
                 else:
                     closerate = sell_row.open
 
